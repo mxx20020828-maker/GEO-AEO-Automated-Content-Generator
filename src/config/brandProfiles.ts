@@ -6,13 +6,15 @@ export interface BrandProfile {
   brandName: string;
   website: string;
   industry: string;
-  targetCustomers: string;
+  targetAudience: string;
   productCategories: string;
   brandAdvantages: string;
   writingStyle: string;
-  defaultKeywords: string;
-  internalLinkNotes: string;
   forbiddenClaims: string;
+  recommendedLanguage: string;
+  defaultKeywords: string;
+  internalLinks: string;
+  competitorNotes: string;
 }
 
 export const brandProfiles: BrandProfile[] = [
@@ -21,44 +23,50 @@ export const brandProfiles: BrandProfile[] = [
     label: 'Nanolab',
     brandName: 'Nanolab',
     website: 'https://www.nanolab9.com',
-    industry:
-      'laboratory consumables, sterilization supplies, lab safety, sample handling, laboratory procurement',
-    targetCustomers:
-      'Laboratories\nResearch facilities\nUniversities\nBiotech companies\nMedical labs\nIndustrial labs',
+    industry: 'laboratory consumables, sterilization supplies, lab safety, sample handling, laboratory procurement',
+    targetAudience:
+      'Laboratory procurement teams\nResearch laboratories\nBiotech companies\nUniversity labs\nMedical and dental clinics\nIndustrial laboratories\nLab managers\nPurchasing managers',
     productCategories:
-      'Autoclavable biohazard bags\nSterilization pouches\nSilicone tubing\nVented caps and breathable caps\nCentrifuge bottles\nSterilizable goggles\nLaboratory small supplies',
+      'Autoclavable biohazard bags\nSterilization pouches\nSilicone tubing\nVented caps and breathable caps\nCentrifuge bottles\nLab safety consumables\nSample handling supplies',
     brandAdvantages:
       'Practical laboratory consumables for procurement teams\nUseful product information for lab buyers\nProduct categories aligned with sterilization, sample handling, and lab safety workflows',
     writingStyle:
-      'English\nProfessional B2B laboratory procurement style\nClear, practical, and SEO-friendly\nDo not sound like hard advertising',
-    defaultKeywords:
-      'autoclavable biohazard bags\nsterilization pouches\nlaboratory silicone tubing\nvented caps for lab bottles\ncentrifuge bottles\nsterilizable lab goggles\nlaboratory consumables supplier',
-    internalLinkNotes:
-      'Naturally mention the Nanolab website where relevant. Suggest linking product category names to corresponding collection or product pages when available.',
+      'Professional B2B laboratory procurement style\nClear, practical, and SEO-friendly\nInstructional but not overly technical\nCautious compliance language\nNo hard advertising',
     forbiddenClaims:
-      'Do not claim medical approval unless provided\nDo not claim guaranteed sterility unless the product data supports it\nDo not invent certifications\nDo not make unverified safety or compliance claims\nDo not use hard advertising language'
+      'Do not claim guaranteed sterility.\nDo not invent certifications.\nDo not claim universal compatibility.\nDo not provide universal sterilization cycle parameters.\nDo not claim chemical indicators prove successful sterilization by themselves.\nDo not make unverified safety or compliance claims.\nDo not claim products meet FDA, CE, ISO, USP, ASTM, or EN standards unless proof is provided.\nDo not use hard advertising language.',
+    recommendedLanguage:
+      'when compatible\naccording to product instructions\ndepending on facility SOPs\nmay be suitable for\ndesigned for routine laboratory use\nprocurement teams can evaluate\nusers should verify compatibility',
+    defaultKeywords:
+      'autoclavable biohazard bags\nsterilization pouches\nlaboratory silicone tubing\nvented caps for lab bottles\ncentrifuge bottles\nlab safety consumables',
+    internalLinks:
+      'Suggest relevant Nanolab product category or collection links when the user provides URLs.',
+    competitorNotes:
+      'Use a cautious procurement-guide angle. Do not copy competitor wording or invent standards.'
   },
   {
     id: 'mrfairing',
     label: 'MrFairing',
     brandName: 'MrFairing',
     website: 'https://www.mrfairing.com',
-    industry:
-      'aftermarket motorcycle fairing kits, sportbike fairings, motorcycle bodywork, replacement fairings',
-    targetCustomers:
-      'Sportbike owners\nMotorcycle riders\nRiders replacing damaged fairings\nRiders customizing motorcycle appearance\nMotorcycle repair shops\nMotorcycle modification enthusiasts',
+    industry: 'aftermarket motorcycle fairing kits, sportbike fairings, motorcycle bodywork replacement, motorcycle customization',
+    targetAudience:
+      'Sportbike owners\nMotorcycle riders replacing damaged fairings\nRiders customizing motorcycle appearance\nDIY motorcycle repair users\nAftermarket fairing buyers\nHonda, Yamaha, Suzuki, Kawasaki, Ducati, BMW, Triumph sportbike owners',
     productCategories:
-      'Motorcycle fairing kits\nAftermarket fairings\nSportbike bodywork\nReplacement fairing panels\nCustom fairing kits\nBrand/model/year-specific fairings\nHonda\nYamaha\nSuzuki\nKawasaki\nDucati\nBMW\nTriumph',
+      'Aftermarket motorcycle fairing kits\nABS plastic fairings\nPainted fairing kits\nReplacement fairings\nCustom motorcycle fairings\nBrand/model/year-specific fairing kits',
     brandAdvantages:
-      'Motorcycle fairing kits for multiple popular sportbike brands\nModel and year-specific product selection\nCustom fairing service\nAffordable aftermarket fairing options\nSuitable for riders replacing damaged or old fairings\nSuitable for riders who want a new look for their motorcycle',
+      'Aftermarket fairing kits for popular sportbike brands\nModel- and year-specific shopping paths\nCustom look options\nHelpful buyer guidance for replacement bodywork',
     writingStyle:
-      'English\nProfessional but rider-friendly\nUseful for motorcycle owners, not overly technical\nSEO-friendly\nDo not sound like hard advertising\nNaturally mention MrFairing where relevant\nAvoid exaggerated claims',
-    defaultKeywords:
-      'motorcycle fairing replacement cost\naftermarket motorcycle fairings\nOEM vs aftermarket fairings\nmotorcycle fairing kit\npainted motorcycle fairings\nABS motorcycle fairings\nhow to replace motorcycle fairings\ncustom motorcycle fairing kit\nsportbike fairings\nfairing kit for Honda CBR\nfairing kit for Yamaha R1\nfairing kit for Kawasaki Ninja\nfairing kit for Suzuki GSXR',
-    internalLinkNotes:
-      'Use model, brand, and year-specific internal link opportunities when relevant. Suggest linking fairing kit, custom fairing, and brand/model collection phrases to matching MrFairing pages.',
+      'English\nPractical motorcycle buyer guide style\nHelpful, rider-friendly, SEO-focused\nClear but not too technical\nAvoid exaggerated claims\nAvoid fake OEM wording',
     forbiddenClaims:
-      'Do not claim OEM original parts\nDo not claim perfect fit for every bike\nDo not claim official manufacturer affiliation\nDo not claim professional installation is always unnecessary\nDo not claim exact delivery time unless provided\nDo not say 100% guaranteed fit\nDo not make safety claims that cannot be verified'
+      'Do not claim OEM if product is aftermarket.\nDo not claim perfect fitment for every bike.\nDo not claim professional installation is unnecessary for every rider.\nDo not claim exact installation time unless framed as an estimate.\nDo not claim paint color will perfectly match the original motorcycle.\nDo not claim universal compatibility.\nDo not invent warranty, shipping, or certification details.\nDo not mention official Honda/Yamaha/Suzuki/Kawasaki/Ducati/BMW/Triumph affiliation.\nDo not use unsafe riding or repair advice.',
+    recommendedLanguage:
+      'aftermarket fairing kit\nmodel- and year-specific\ndesigned for compatible sportbike models\nprofessional installation may be recommended\nfitment should be checked before installation\npainted fairing kit\nreplacement bodywork\ncustom look',
+    defaultKeywords:
+      'aftermarket motorcycle fairings\nmotorcycle fairing kit\nOEM vs aftermarket fairings\npainted motorcycle fairings\nABS motorcycle fairings\nmotorcycle fairing replacement cost\ncustom motorcycle fairing kit',
+    internalLinks:
+      'Suggest model, brand, year, fairing kit, and custom fairing internal link opportunities when the user provides URLs.',
+    competitorNotes:
+      'Use a practical rider buyer-guide angle. Do not imply official manufacturer affiliation.'
   },
   {
     id: 'custom',
@@ -66,15 +74,15 @@ export const brandProfiles: BrandProfile[] = [
     brandName: 'Custom Brand',
     website: '',
     industry: '',
-    targetCustomers: '',
+    targetAudience: '',
     productCategories: '',
     brandAdvantages: '',
-    writingStyle:
-      'English\nProfessional, natural, practical, and SEO-friendly\nDo not sound like hard advertising',
+    writingStyle: 'English\nProfessional, natural, practical, and SEO-friendly\nNo hard advertising',
+    forbiddenClaims: 'Do not invent facts, certifications, statistics, guarantees, delivery times, or official affiliations.',
+    recommendedLanguage: 'Use cautious, accurate, brand-appropriate wording.',
     defaultKeywords: '',
-    internalLinkNotes: '',
-    forbiddenClaims:
-      'Do not invent facts, certifications, statistics, guarantees, delivery times, or official affiliations.'
+    internalLinks: '',
+    competitorNotes: ''
   }
 ];
 
