@@ -8,7 +8,7 @@ const CSV_OUTPUT_FILE = 'aitseo-analysis/aitseo-article-structure.csv';
 const REPORT_OUTPUT_FILE = 'aitseo-analysis/aitseo-pattern-report.md';
 const REQUEST_DELAY_MS = 1500;
 const REQUEST_TIMEOUT_MS = 30000;
-const USER_AGENT = 'Mozilla/5.0 (compatible; AITSEOArticleAnalyzer/1.1; +https://github.com/)';
+const USER_AGENT = 'Mozilla/5.0 (compatible; AITSEOArticleAnalyzer/1.2; +https://github.com/)';
 
 const preferredContentSelectors = [
   'article',
@@ -23,7 +23,7 @@ const preferredContentSelectors = [
 ];
 const fallbackCandidateSelectors = ['article', 'main', 'section', 'div'];
 const csvColumns = [
-  'url', 'status', 'statusCode', 'error', 'title', 'metaDescription', 'ogTitle',
+  'url', 'status', 'analysisStatus', 'statusCode', 'error', 'title', 'metaDescription', 'ogTitle',
   'ogDescription', 'h1', 'h2List', 'h3List', 'faqQuestions', 'tableCount',
   'imageCount', 'imageAltList', 'internalLinkCount', 'externalLinkCount',
   'bodyWordOrChineseCharCount', 'contentSelectorUsed', 'extractedTextLength',
@@ -67,15 +67,18 @@ async function analyzeUrl(url) {
     const h1 = extractHeadings(html, 'h1')[0] || '';
     const content = extractArticleContent(html);
     const bodyText = content.text;
+    const extractedTextLength = [...bodyText].length;
     const wordCount = estimateTextCount(bodyText);
-    const extractionWarning = wordCount < 300 && (title || h1) ? 'possible_body_extraction_failed' : '';
+    const analysisStatus = getAnalysisStatus(response.statusCode, extractedTextLength, wordCount, title, h1);
+    const extractionWarning = analysisStatus === 'valid' && wordCount < 300 && (title || h1) ? 'possible_body_extraction_failed' : '';
     const links = countLinks(content.html, pageUrl);
 
     return {
       url,
-      status: response.statusCode >= 200 && response.statusCode < 400 ? 'success' : 'failed',
+      status: response.statusCode === 200 ? 'success' : 'failed',
+      analysisStatus,
       statusCode: response.statusCode,
-      error: response.statusCode >= 200 && response.statusCode < 400 ? '' : `HTTP ${response.statusCode}`,
+      error: response.statusCode === 200 ? '' : `HTTP ${response.statusCode}`,
       title,
       metaDescription: extractMetaByName(html, 'description'),
       ogTitle: extractMetaByProperty(html, 'og:title'),
@@ -91,7 +94,7 @@ async function analyzeUrl(url) {
       externalLinkCount: links.external,
       bodyWordOrChineseCharCount: wordCount,
       contentSelectorUsed: content.selector,
-      extractedTextLength: [...bodyText].length,
+      extractedTextLength,
       extractionWarning,
       hasVideoEmbed: hasVideoEmbed(html),
       hasSchemaJsonLd: hasSchemaJsonLd(html),
@@ -105,9 +108,16 @@ async function analyzeUrl(url) {
   }
 }
 
+function getAnalysisStatus(statusCode, extractedTextLength, wordCount, title, h1) {
+  if (statusCode !== 200) return 'http_failed';
+  if (extractedTextLength === 0 && wordCount === 0 && !title && !h1) return 'empty_response';
+  if (extractedTextLength === 0 || wordCount === 0) return 'extraction_failed';
+  return 'valid';
+}
+
 function failedRow(url, error) {
   return {
-    url, status: 'failed', statusCode: '', error, title: '', metaDescription: '', ogTitle: '',
+    url, status: 'failed', analysisStatus: 'http_failed', statusCode: '', error, title: '', metaDescription: '', ogTitle: '',
     ogDescription: '', h1: '', h2List: [], h3List: [], faqQuestions: [], tableCount: 0,
     imageCount: 0, imageAltList: [], internalLinkCount: 0, externalLinkCount: 0,
     bodyWordOrChineseCharCount: 0, contentSelectorUsed: '', extractedTextLength: 0,
@@ -336,15 +346,27 @@ function parseAttributes(tag) {
 }
 function toCsv(rows) { return [csvColumns.join(','), ...rows.map((row) => csvColumns.map((column) => csvEscape(Array.isArray(row[column]) ? row[column].join(' | ') : row[column])).join(','))].join('\n'); }
 function buildMarkdownReport(rows) {
-  const successful = rows.filter((row) => row.status === 'success');
-  const failed = rows.filter((row) => row.status === 'failed');
+  const httpSuccessful = rows.filter((row) => row.statusCode === 200);
+  const valid = rows.filter((row) => row.analysisStatus === 'valid');
+  const skipped = rows.filter((row) => row.analysisStatus === 'empty_response' || row.analysisStatus === 'http_failed');
+  const warnings = rows.filter((row) => row.extractionWarning);
   return [
     '# AITSEO Article Pattern Report', '', `Generated at: ${new Date().toISOString()}`, '', '## Summary', '',
-    `- Total URLs: ${rows.length}`, `- Successful: ${successful.length}`, `- Failed: ${failed.length}`,
-    `- Average estimated body words / Chinese characters: ${Math.round(average(successful.map((row) => row.bodyWordOrChineseCharCount)))}`,
-    `- Pages with extraction warnings: ${successful.filter((row) => row.extractionWarning).length}`, '', '## Failed URLs', '',
-    failed.length ? markdownTable(failed, ['url', 'statusCode', 'error']) : 'None.', '', '## Page Details', '',
-    markdownTable(rows, ['url', 'status', 'statusCode', 'title', 'h1', 'bodyWordOrChineseCharCount', 'contentSelectorUsed', 'extractedTextLength', 'extractionWarning', 'tableCount', 'imageCount', 'internalLinkCount', 'externalLinkCount', 'hasVideoEmbed', 'hasSchemaJsonLd']), '',
+    `- Total URLs: ${rows.length}`,
+    `- HTTP successful pages: ${httpSuccessful.length}`,
+    `- Valid analyzed articles: ${valid.length}`,
+    `- Empty / skipped pages: ${skipped.length}`,
+    `- Extraction warnings: ${warnings.length}`,
+    `- Average estimated body words / Chinese characters: ${Math.round(average(valid.map((row) => row.bodyWordOrChineseCharCount)))}`,
+    `- Average H2 count: ${roundOne(average(valid.map((row) => row.h2List.length)))}`,
+    `- Average H3 count: ${roundOne(average(valid.map((row) => row.h3List.length)))}`,
+    `- Average table count: ${roundOne(average(valid.map((row) => row.tableCount)))}`,
+    `- Pages with FAQ questions: ${valid.filter((row) => row.faqQuestions.length > 0).length}`,
+    `- Average image count: ${roundOne(average(valid.map((row) => row.imageCount)))}`,
+    '', '## Failed / Skipped URLs', '',
+    rows.length - valid.length ? markdownTable(rows.filter((row) => row.analysisStatus !== 'valid'), ['url', 'analysisStatus', 'statusCode', 'error', 'extractionWarning']) : 'None.',
+    '', '## Page Details', '',
+    markdownTable(rows, ['url', 'status', 'analysisStatus', 'statusCode', 'title', 'h1', 'bodyWordOrChineseCharCount', 'contentSelectorUsed', 'extractedTextLength', 'extractionWarning', 'tableCount', 'imageCount', 'internalLinkCount', 'externalLinkCount', 'hasVideoEmbed', 'hasSchemaJsonLd']), '',
   ].join('\n');
 }
 function markdownTable(rows, columns) { return [`| ${columns.join(' | ')} |`, `| ${columns.map(() => '---').join(' | ')} |`, ...rows.map((row) => `| ${columns.map((column) => markdownCell(row[column])).join(' | ')} |`)].join('\n'); }
@@ -360,5 +382,6 @@ function isQuestionLike(value) { return /[?\uFF1F]\s*$/.test(value) || /^(what|w
 function firstChars(value, count) { return [...value].slice(0, count).join(''); }
 function lastChars(value, count) { return [...value].slice(-count).join(''); }
 function average(values) { return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0; }
+function roundOne(value) { return Math.round(value * 10) / 10; }
 function escapeRegExp(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
