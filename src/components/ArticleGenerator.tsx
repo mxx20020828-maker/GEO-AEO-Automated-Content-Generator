@@ -35,20 +35,25 @@ const defaultModel = 'x-ai/grok-4.3';
 const modelOptions = ['x-ai/grok-4.3', 'deepseek/deepseek-chat', 'qwen/qwen-2.5-72b-instruct', 'meta-llama/llama-3.1-405b-instruct'];
 const articleLengths = ['2500-3000 words', '3000-3500 words', '3500-4500 words'];
 
+const getMinimumWordCount = (articleLength: string) => {
+  const match = articleLength.match(/^(\d+)/);
+  return match ? Number(match[1]) : 2500;
+};
+
 const agentSeeds = [
   ['intent', 'Topic & Search Intent Agent', 'Topic', 'intentAnalysis', 'Analyze primary/secondary search intent, reader problems, questions, buying stage, content angle, and risk notes. Return structured JSON only.'],
   ['brief', 'SEO Brief Agent', 'Brief', 'seoBrief', 'Create an SEO brief with primary keyword, secondary and semantic keywords, content goals, required sections, questions, tables, FAQ need, and word count. Return structured JSON only.'],
   ['outline', 'Outline Agent', 'Outline', 'outline', 'Create an H2/H3 outline with 8-14 H2s, useful H3s, 2-5 table ideas, 5-8 FAQs, and a conclusion goal. Return structured JSON only.'],
   ['research', 'Research Notes Agent', 'Research', 'researchNotes', 'Use only provided product details, competitor notes, URLs, and external references. Extract usable facts, angles, references, do-not-use items, and fact gaps. Return JSON only.'],
   ['tables', 'Table / Data Module Agent', 'Tables', 'tables', 'Create 2-5 practical tables for comparison, checklist, cost factors, mistakes, specs, or buying decisions. Do not invent exact specs or prices. Return JSON only.'],
-  ['writer', 'Writer Agent', 'Writer', 'draftArticle', 'Write the full long-form English SEO blog article in Markdown using prior outputs. Include headings, tables, practical guidance, and cautious brand mentions.'],
-  ['rewrite', 'Rewrite / Humanize Agent', 'Rewrite', 'fullArticleMarkdown', 'Rewrite the draft to sound natural, expert, less AI-like, and less promotional while preserving facts, headings, SEO structure, and keywords. Return Markdown.'],
+  ['writer', 'Writer Agent', 'Writer', 'draftArticle', 'Write the full long-form English SEO blog article in Markdown using prior outputs. Treat the Minimum English word count as a hard floor; for 2500-3000 words, write at least 2500 English words. Each major H2 must contain 2-4 substantive paragraphs, not one thin paragraph. Add H3 subsections where useful. Expand practical step-by-step details, buyer evaluation details, common mistakes with examples, steam vs EO practical differences, indicator interpretation limitations, storage and handling guidance, and procurement checklist details where relevant. Include headings, tables, practical guidance, and cautious brand mentions.'],
+  ['rewrite', 'Rewrite / Humanize Agent', 'Rewrite', 'fullArticleMarkdown', 'Rewrite the draft to sound natural, expert, less AI-like, and less promotional while preserving facts, headings, SEO structure, keywords, and the required minimum word count. Return Markdown.'],
   ['faq', 'FAQ / AEO / GEO Agent', 'FAQ', 'faq', 'Generate 5-8 useful FAQ items, people-also-ask style questions, and an AI-overview-friendly summary. Return structured JSON only.'],
   ['seo', 'SEO Metadata Agent', 'SEO', 'seoPackage', 'Create SEO title, meta description, URL slug, tags, excerpt, focus keyword, and secondary keywords. Return structured JSON only.'],
   ['links', 'Internal / External Link Agent', 'Links', 'links', 'Suggest natural internal and external links with anchor text and placement. Do not over-link or link to direct competitors unless requested. Return JSON only.'],
   ['images', 'Image / Alt Text Agent', 'Images', 'imageIdeas', 'Create one featured image prompt, featured image alt text, and 4-6 in-article image ideas with natural alt text. Return JSON only.'],
-  ['html', 'HTML Formatter Agent', 'HTML', 'shopifyHtml', 'Convert the final article, tables, FAQ, links, and image suggestions into clean Shopify-ready HTML. Do not include html/head/body/style/script/H1. Return only HTML.'],
-  ['quality', 'Quality Checker Agent', 'Quality', 'qualityReport', 'Review word count, H2/H3 counts, tables, FAQ, SEO metadata, HTML cleanliness, brand fit, unsupported claims, hard advertising, and Shopify suitability. Return JSON only.']
+  ['html', 'HTML Formatter Agent', 'HTML', 'shopifyHtml', 'Convert the final article, tables, FAQ, links, and image suggestions into clean Shopify-ready HTML. Do not include html/head/body/style/script/H1. Do not wrap the result in <div class="blog-article"> or any article wrapper; start directly with <p> or <h2>. Never use <details> or <summary>. FAQ must use <h2>FAQ</h2>, then each question as <h3>Question?</h3> and each answer as <p>Answer...</p>. Return only HTML.'],
+  ['quality', 'Quality Checker Agent', 'Quality', 'qualityReport', 'Review word count against the Minimum English word count, H2/H3 counts, tables, FAQ, SEO metadata, HTML cleanliness, brand fit, unsupported claims, hard advertising, and Shopify suitability. If the final article or Shopify HTML is below the selected minimum word count, mark the result failed and tell the writer to expand it. Return JSON only.']
 ];
 
 const createAgents = (): AgentRun[] => agentSeeds.map(([id, name, shortName, outputKey, prompt]) => ({
@@ -103,6 +108,7 @@ export function ArticleGenerator() {
   const faq = parseJsonish(outputs.faq || '');
   const imageIdeas = parseJsonish(outputs.imageIdeas || '');
   const qualityReport = parseJsonish(outputs.qualityReport || '');
+  const minimumWordCount = getMinimumWordCount(form.articleLength);
   const brandSummary = useMemo(() => JSON.stringify({
     brandName: form.brandName,
     website: form.website,
@@ -136,6 +142,19 @@ GLOBAL RULES
 - Follow the brand profile and forbidden claims.
 - Do not invent certifications, guarantees, prices, exact specs, affiliations, or compliance claims.
 - Do not publish to Shopify, WordPress, or any external system.
+- For Nanolab topics, avoid unsupported phrases such as "medical-grade paper" and "standard sizes". Use cautious language such as "paper or compatible porous material", "available pouch sizes", and "depending on product documentation" when appropriate.
+
+CONTENT LENGTH AND FORMAT RULES
+- Selected article length: ${form.articleLength}.
+- Minimum English word count: ${minimumWordCount}. This is a hard floor for the Writer, Rewrite, HTML Formatter, and Quality Checker agents.
+- If the selected article length is 2500-3000 words, the article must contain at least 2500 English words.
+- Writer Agent: every major H2 must include 2-4 substantive paragraphs. Do not leave any main H2 with only one short paragraph.
+- Writer Agent: add H3 subsections where needed to support depth, clarity, and scannability.
+- Writer Agent: expand practical step-by-step details, buyer evaluation details, common mistakes with examples, steam vs EO practical differences, indicator interpretation limitations, storage and handling guidance, and procurement checklist details when they fit the topic.
+- HTML Formatter Agent: never use <details> or <summary>.
+- HTML Formatter Agent: FAQ HTML must use <h2>FAQ</h2>, then each question as <h3>Question?</h3> and each answer as <p>Answer...</p>.
+- HTML Formatter Agent: do not wrap the Shopify HTML in <div class="blog-article"> or any article/container wrapper. Start directly with <p> or <h2>.
+- Quality Checker Agent: count the English words in the final article or Shopify HTML. If the count is below ${minimumWordCount}, set passed=false, mark the check as failed, and include a required fix telling the writer to expand the article to at least ${minimumWordCount} words.
 
 BRAND PROFILE
 ${brandSummary}
@@ -152,6 +171,7 @@ Competitor reference URLs: ${form.competitorReferenceUrls}
 Competitor notes: ${form.competitorReferenceNotes}
 External references: ${form.externalReferences}
 Article length: ${form.articleLength}
+Minimum English word count: ${minimumWordCount}
 Output format: ${form.outputFormat}
 Additional instructions: ${form.additionalInstructions}
 
