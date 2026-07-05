@@ -5,24 +5,23 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
+const defaultModel = process.env.OPENROUTER_MODEL || 'x-ai/grok-4.3';
 
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '4mb' }));
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, defaultModel });
 });
 
-app.post('/api/generate', async (req, res) => {
+const handleAgentRequest = async (req, res) => {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
-    res.status(500).json({
-      error: 'Missing OPENROUTER_API_KEY. Add it to your local .env file.'
-    });
+    res.status(500).json({ error: 'Missing OPENROUTER_API_KEY. Add it to your local .env file.' });
     return;
   }
 
-  const prompt = req.body?.prompt;
+  const { prompt, model, agentName } = req.body || {};
 
   if (!prompt || typeof prompt !== 'string') {
     res.status(400).json({ error: 'Missing prompt.' });
@@ -36,13 +35,13 @@ app.post('/api/generate', async (req, res) => {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.OPENROUTER_REFERER || 'http://localhost:3000',
-        'X-Title': process.env.OPENROUTER_TITLE || 'AI Blog Generator'
+        'X-Title': process.env.OPENROUTER_TITLE || 'AITSEO-like Blog Generator'
       },
       body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || 'x-ai/grok-4',
+        model: model || defaultModel,
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 9000
+        temperature: Number(process.env.OPENROUTER_TEMPERATURE || 0.65),
+        max_tokens: Number(process.env.OPENROUTER_MAX_TOKENS || 9000)
       })
     });
 
@@ -50,7 +49,8 @@ app.post('/api/generate', async (req, res) => {
 
     if (!response.ok) {
       res.status(response.status).json({
-        error: data?.error?.message || data?.message || response.statusText
+        error: data?.error?.message || data?.message || response.statusText,
+        agentName
       });
       return;
     }
@@ -58,17 +58,21 @@ app.post('/api/generate', async (req, res) => {
     const content = data?.choices?.[0]?.message?.content;
 
     if (!content) {
-      res.status(502).json({ error: 'OpenRouter returned no article content.' });
+      res.status(502).json({ error: 'OpenRouter returned no content.', agentName });
       return;
     }
 
-    res.json({ content });
+    res.json({ content, model: model || defaultModel, agentName });
   } catch (error) {
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to call OpenRouter.'
+      error: error instanceof Error ? error.message : 'Failed to call OpenRouter.',
+      agentName
     });
   }
-});
+};
+
+app.post('/api/agent', handleAgentRequest);
+app.post('/api/generate', handleAgentRequest);
 
 app.listen(port, () => {
   console.log(`Local API server running at http://localhost:${port}`);
