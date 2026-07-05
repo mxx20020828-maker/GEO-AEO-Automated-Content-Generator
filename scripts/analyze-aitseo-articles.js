@@ -348,7 +348,7 @@ function toCsv(rows) { return [csvColumns.join(','), ...rows.map((row) => csvCol
 function buildMarkdownReport(rows) {
   const httpSuccessful = rows.filter((row) => row.statusCode === 200);
   const valid = rows.filter((row) => row.analysisStatus === 'valid');
-  const skipped = rows.filter((row) => row.analysisStatus === 'empty_response' || row.analysisStatus === 'http_failed');
+  const skipped = rows.filter((row) => row.analysisStatus !== 'valid');
   const warnings = rows.filter((row) => row.extractionWarning);
   return [
     '# AITSEO Article Pattern Report', '', `Generated at: ${new Date().toISOString()}`, '', '## Summary', '',
